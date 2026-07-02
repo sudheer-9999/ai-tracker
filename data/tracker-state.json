@@ -1,0 +1,40 @@
+{
+  "currentDay": 2,
+  "startDate": "2026-07-02",
+  "streak": 1,
+  "longestStreak": 1,
+  "lastCompletionDate": "2026-07-02",
+  "totalTimeSpentMinutes": 65,
+  "skillLevels": {
+    "python_ml_foundations": 0,
+    "deep_learning_nlp": 0,
+    "llm_rag_agents": 1.1,
+    "mlops_deployment": 0,
+    "interview_readiness": 0
+  },
+  "dayProgress": {
+    "1": {
+      "status": "completed",
+      "tasksCompleted": [
+        "task-0",
+        "task-1",
+        "task-2",
+        "learn"
+      ],
+      "timeSpentMinutes": 65,
+      "reflection": {
+        "built": "i just built an api call",
+        "learned": "i just built an api call",
+        "difficult": "i just built an api call",
+        "improve": "i just built an api call",
+        "blockers": "i just built an api call"
+      },
+      "score": 93,
+      "startedAt": "2026-07-02T12:38:56.582Z",
+      "completedAt": "2026-07-02T12:46:20.422Z",
+      "completedCalendarDate": "2026-07-02"
+    }
+  },
+  "weeklyReports": {},
+  "monthlyReports": {}
+}

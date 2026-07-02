@@ -1,0 +1,995 @@
+
+const MONTHS = [
+  {
+    month: 1, title: "RAG Chatbot", color: "#8B5E3C",
+    weeks: [
+      {
+        week: 1, title: "Python + API + Memory Chatbot",
+        days: [
+          {
+            day: 1, topic: "Setup + first API call",
+            learn: "Every LLM is just an HTTP endpoint. Send JSON, get JSON back. No magic.",
+            outcome: "Script that calls Gemini or Groq API and prints the reply.",
+            practice: "Ask the model 'What is RAG?' and print only the text from the response JSON.",
+            tasks: ["Install Python 3.11+, VS Code, create venv", "Get free Gemini key from aistudio.google.com", "Write raw requests.post() call, print the reply text"]
+          },
+          {
+            day: 2, topic: "Multi-turn memory chatbot",
+            learn: "LLMs have no memory. You fake it by sending the full conversation list every single call.",
+            outcome: "Terminal chatbot that remembers context across 5 or more messages.",
+            practice: "Tell it your name in message 1. Ask it to recall your name in message 3. Confirm it works.",
+            tasks: ["Create messages=[] list", "Append user and assistant turns each round", "Confirm context retention across 5 messages"]
+          },
+          {
+            day: 3, topic: "System prompts",
+            learn: "System prompt shapes model behaviour before the user says anything. Role, tone, constraints.",
+            outcome: "Same chatbot but now behaves as a strict code reviewer.",
+            practice: "Add: 'You are a senior code reviewer. Only bullet points. Be harsh.' Paste messy code and compare output vs no system prompt.",
+            tasks: ["Add system message at index 0 of messages list", "Test 3 different personas", "Note how drastically behaviour changes"]
+          },
+          {
+            day: 4, topic: "Structured JSON output",
+            learn: "Real apps need structured data from LLMs, not paragraphs. Prompt it to return only JSON.",
+            outcome: "Script extracts name, email, skills from messy text and returns clean JSON.",
+            practice: "Input: 'Hi I am Ravi, reach me at ravi@gmail.com, I know React and Node' -> Output: {name, email, skills}",
+            tasks: ["Prompt: 'Return ONLY valid JSON, no markdown, no preamble'", "Parse with json.loads()", "Test 3 different messy inputs"]
+          },
+          {
+            day: 5, topic: "Error handling",
+            learn: "APIs fail. Rate limits, empty responses, bad JSON. Production code never crashes on these.",
+            outcome: "Chatbot handles all failures gracefully with one automatic retry.",
+            practice: "Force an error with a bad API key. Confirm try/except catches it and prints a clean message.",
+            tasks: ["Wrap API call in try/except", "Handle: API fail, empty response, JSON parse error", "Add retry: wait 2s and try once more"]
+          },
+          {
+            day: 6, topic: "Refactor + GitHub",
+            learn: "Clean modular code is part of your portfolio. Messy notebooks do not impress interviewers.",
+            outcome: "All week's code in clean functions, pushed to GitHub.",
+            practice: "Create llm_client.py with send_message(), chat_with_memory(), extract_json(). Each takes clear inputs, returns clean output.",
+            tasks: ["Refactor into 3 reusable functions", "Push to GitHub with README", "Write 2 lines on what you learned this week"]
+          },
+          { day: 7, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 2, title: "Embeddings + Vector DB",
+        days: [
+          {
+            day: 8, topic: "What are embeddings",
+            learn: "Embeddings turn text into number arrays. Similar meaning = similar numbers. This powers semantic search.",
+            outcome: "Script embeds 5 sentences and prints which two are most similar.",
+            practice: "Embed: 'I love cricket', 'Cricket is my favourite sport', 'I enjoy cooking'. First two should score closer than the third.",
+            tasks: ["Use sentence-transformers (free, local) or Gemini embedding API", "Generate embeddings for 5 sentences", "Compute cosine similarity with numpy, print scores"]
+          },
+          {
+            day: 9, topic: "Vector DB basics",
+            learn: "Vector DB stores embeddings and answers 'find me the 3 most similar chunks to this query' instantly.",
+            outcome: "Chroma DB storing 10 chunks, retrieves top 2 relevant for any query.",
+            practice: "Store 10 facts about yourself. Query: 'What backend tech does this person know?' Confirm right chunks come back.",
+            tasks: ["pip install chromadb", "Create collection, add 10 docs with embeddings", "Query and print top 2 results with scores"]
+          },
+          {
+            day: 10, topic: "Document loading",
+            learn: "Before chunking you must load raw files, PDFs, text, web pages, into clean Python strings.",
+            outcome: "Script loads any PDF or .txt and prints first 500 characters cleanly.",
+            practice: "Load your own resume PDF. Strip whitespace and symbols. Confirm readable output.",
+            tasks: ["Use PyPDF2 for PDF or requests+BeautifulSoup for web", "Strip extra whitespace and special chars", "Confirm clean readable text output"]
+          },
+          {
+            day: 11, topic: "Chunking strategy",
+            learn: "You split documents into overlapping chunks so context is not lost at boundaries. Overlap is critical.",
+            outcome: "Chunker splits your doc and prints chunk count plus first 3 chunks.",
+            practice: "Try chunk_size=500, overlap=50 vs chunk_size=200, overlap=20. Which gives more coherent chunks? Write your reasoning in a comment.",
+            tasks: ["Write chunk_text(text, chunk_size, overlap) from scratch", "Test 2 chunk sizes on same doc", "Comment your final choice and why"]
+          },
+          {
+            day: 12, topic: "Embed + store pipeline",
+            learn: "Ingestion pipeline = load, chunk, embed each chunk, store in vector DB with metadata.",
+            outcome: "ingest.py takes any .txt or PDF and loads it into Chroma, ready to query.",
+            practice: "Run on your resume, then query: 'What are this person's top skills?' Confirm relevant chunks are returned.",
+            tasks: ["Wire: load -> chunk -> embed -> store in one script", "Add metadata: source and chunk_index to each chunk", "Query 3 questions and verify relevance"]
+          },
+          {
+            day: 13, topic: "Fix + buffer",
+            learn: "Debugging is 50% of real engineering.",
+            outcome: "Pipeline runs cleanly on 2 different unseen documents.",
+            practice: "Test on a Wikipedia article. Fix anything that breaks.",
+            tasks: ["Test on new unseen document", "Fix crashes or empty results", "Push clean code to GitHub"]
+          },
+          { day: 14, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 3, title: "Full RAG Pipeline",
+        days: [
+          {
+            day: 15, topic: "Retrieval step",
+            learn: "Retrieval = embed the user question, find top-k most similar chunks in your DB. The R in RAG.",
+            outcome: "retrieve(query, k=3) returns top 3 relevant chunks for any question.",
+            practice: "Query: 'What projects has this person built?' Print 3 returned chunks, confirm they are actually relevant.",
+            tasks: ["Write retrieve(query, k) function", "Embed query using same model as chunks", "Return top-k chunks with similarity scores"]
+          },
+          {
+            day: 16, topic: "Generation step",
+            learn: "Generation = retrieved chunks + user question stuffed into prompt. LLM answers from context only.",
+            outcome: "generate(query, chunks) returns a grounded answer using only retrieved context.",
+            practice: "Prompt: 'Answer ONLY from context below. If you do not know, say I do not know.' Test it. Confirm no hallucination.",
+            tasks: ["Write generate(query, chunks) function", "Use strict prompt template, context only", "Ask something NOT in your docs, confirm it says it does not know"]
+          },
+          {
+            day: 17, topic: "End-to-end RAG",
+            learn: "Full RAG = retrieve() + generate() chained. User asks, retrieve, generate, answer.",
+            outcome: "rag_query(question) function does the full pipeline in one call.",
+            practice: "Ask 5 questions about your document. Print: question, retrieved chunks, final answer for each.",
+            tasks: ["Wire rag_query = retrieve() + generate()", "Test 5 diverse questions", "Print full chain for each"]
+          },
+          {
+            day: 18, topic: "Build eval set",
+            learn: "Eval = questions with known answers. Without it you are guessing if your RAG actually works.",
+            outcome: "eval.json with 10 Q&A pairs plus a script that scores your RAG.",
+            practice: "Target 7/10 minimum. Run it, log your score before fixing anything.",
+            tasks: ["Write 10 test questions with known answers", "Write eval.py that scores each answer", "Print X/10 score"]
+          },
+          {
+            day: 19, topic: "Fix retrieval failures",
+            learn: "When RAG fails it is almost always wrong chunks being retrieved, not the LLM.",
+            outcome: "Improve eval score by at least 2 points by fixing one retrieval problem.",
+            practice: "Print retrieved chunks for each wrong answer. Try: smaller chunks, more overlap, or k=5. Log before/after score.",
+            tasks: ["Print retrieved chunks for every wrong answer", "Try one fix: chunk size, overlap, or k value", "Re-run eval.py and confirm improvement"]
+          },
+          {
+            day: 20, topic: "Buffer + polish",
+            learn: "A RAG system that crashes in production is worse than no system.",
+            outcome: "Full pipeline runs on any doc without crashing.",
+            practice: "Test on a 10-page doc you have never used. Fix anything that breaks.",
+            tasks: ["Test end-to-end on new unseen 10-page doc", "Add error handling for empty retrieval", "Push to GitHub"]
+          },
+          { day: 21, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 4, title: "Ship Project 1 — Interview Ready",
+        days: [
+          {
+            day: 22, topic: "Streamlit UI",
+            learn: "Streamlit turns Python into a web app in 10 lines. Interviewers can actually try your project.",
+            outcome: "Browser UI: type a question, hit submit, see RAG answer.",
+            practice: "pip install streamlit. Use st.text_input + st.button + st.write. Run and demo it in browser.",
+            tasks: ["pip install streamlit", "Build app.py: input + submit + answer display", "Run locally, confirm it works in browser"]
+          },
+          {
+            day: 23, topic: "Architecture diagram",
+            learn: "Drawing your system proves you understand it. Almost every AI interview asks this.",
+            outcome: "Diagram showing: Document -> Chunker -> Embedder -> VectorDB -> Retriever -> LLM -> Answer",
+            practice: "Draw in Excalidraw (free, online). Export PNG, add to README. Label each component with actual tech you used.",
+            tasks: ["Draw architecture in Excalidraw", "Export PNG to GitHub repo", "Label with your actual stack: Chroma, Gemini, etc"]
+          },
+          {
+            day: 24, topic: "README + decisions",
+            learn: "Explaining WHY you made decisions signals seniority. Most devs only explain what they built.",
+            outcome: "README with: what it does, architecture, technical decisions, eval score.",
+            practice: "Write: 'Why did I pick chunk_size=500?' Even 'I tested both and this scored better' is a senior answer.",
+            tasks: ["README: problem, solution, architecture, tech stack", "Add Technical Decisions section", "Include eval score: Achieves 8/10 on custom eval set"]
+          },
+          {
+            day: 25, topic: "Record demo",
+            learn: "Recruiters skim GitHub in 30 seconds. A GIF at the top gets their attention immediately.",
+            outcome: "60 to 90 second screen recording: upload doc, ask question, get answer.",
+            practice: "Use Loom (free). Show 3 different questions. Embed link at top of README.",
+            tasks: ["Record 60-90s demo on Loom", "Show 3 different questions in demo", "Embed link at top of README"]
+          },
+          {
+            day: 26, topic: "Interview narrative",
+            learn: "You need a rehearsed 2-minute answer to 'walk me through your project'. Interviewers always ask this.",
+            outcome: "150-word pitch covering: what it does, how RAG works, tech choices, what you would improve.",
+            practice: "Write the pitch. Say it out loud 3 times. Time yourself. Target: under 2 minutes.",
+            tasks: ["Write 150-word project pitch", "Cover: problem, RAG approach, tech choices, next improvement", "Say out loud 3 times and time it"]
+          },
+          {
+            day: 27, topic: "Hard interview Q prep",
+            learn: "The question that filters real builders: 'What happens when retrieval fails and how did you fix it?'",
+            outcome: "Written answers to 5 hard RAG questions you can speak to confidently.",
+            practice: "Answer these: 1) Why this chunk size? 2) No relevant chunk found? 3) How to improve retrieval? 4) Evaluate at scale? 5) Reduce hallucinations?",
+            tasks: ["Write answers to all 5 questions", "Reference your actual project in each answer", "Push final polished code to GitHub"]
+          },
+          { day: 28, topic: "Rest + plan Month 2", learn: "", outcome: "", practice: "", tasks: ["Off. Project 1 is done and interview-ready.", "Light read: what tool-using agents are"] },
+        ]
+      },
+    ]
+  },
+  {
+    month: 2, title: "Tool-Using Agents", color: "#3C6E71",
+    weeks: [
+      {
+        week: 5, title: "Function Calling Basics",
+        days: [
+          {
+            day: 29, topic: "What is function calling",
+            learn: "Function calling = you define tools as JSON schemas, LLM decides when and which tool to call. No hardcoded if/else.",
+            outcome: "Script defines a get_weather tool schema and the LLM decides to call it when asked about weather.",
+            practice: "Ask 'What is the weather in Mumbai?' The LLM should return a tool_call object, not an answer. Print the raw tool_call JSON.",
+            tasks: ["Define a tool as JSON schema: name, description, parameters", "Send to LLM with tools parameter", "Print the raw tool_call response and understand its structure"]
+          },
+          {
+            day: 30, topic: "Build and execute a tool",
+            learn: "After LLM returns a tool_call, your code executes the actual function and returns the result.",
+            outcome: "A calculator tool that the LLM calls when asked to do maths.",
+            practice: "'What is 347 * 89?' -> LLM calls calculate(347, 89) -> your Python runs it -> returns 30883 -> LLM gives final answer.",
+            tasks: ["Write calculate(a, b, operation) Python function", "Parse LLM tool_call, extract function name and args", "Execute function, print result"]
+          },
+          {
+            day: 31, topic: "Multiple tools",
+            learn: "Give the LLM 3 tools and let it decide which fits the question. This is the core of agents.",
+            outcome: "LLM chooses correctly between calculator, get_weather, and search_docs tools.",
+            practice: "Ask 3 questions: one maths, one weather, one about docs. Confirm LLM picks the right tool each time.",
+            tasks: ["Define 3 tool schemas: calculate, get_weather, search_docs", "Test 3 questions, one for each tool", "Confirm correct tool selected each time"]
+          },
+          {
+            day: 32, topic: "Tool result to final answer",
+            learn: "Full tool loop: LLM calls tool, you run it, you return result to LLM, LLM generates final natural answer.",
+            outcome: "End-to-end: user question, tool call, tool result, final answer in one clean flow.",
+            practice: "'Convert 100 USD to INR' -> LLM calls convert_currency(100, USD, INR) -> you return 8300 -> LLM says '100 USD is approximately 8300 rupees.'",
+            tasks: ["Send tool result back as tool_result message", "Get final natural language answer from LLM", "Print clean final answer to user"]
+          },
+          {
+            day: 33, topic: "Tool error handling",
+            learn: "Tools fail. API down, bad input, timeout. The agent must recover gracefully instead of crashing.",
+            outcome: "Agent handles tool failures and tells the user what went wrong.",
+            practice: "Force your weather tool to raise an Exception. Confirm agent catches it and responds: 'I could not fetch weather right now. Try again.'",
+            tasks: ["Add try/except inside each tool function", "Return error string instead of crashing", "Confirm agent responds sensibly when tool fails"]
+          },
+          {
+            day: 34, topic: "Buffer + refactor",
+            learn: "Refactor early. Messy agent code becomes impossible to debug later.",
+            outcome: "Clean project with separate files: tools.py, executor.py, agent.py",
+            practice: "tools.py = tool functions. executor.py = parses and runs tool calls. agent.py = orchestrates the flow.",
+            tasks: ["Split into tools.py, executor.py, agent.py", "Each file has one clear responsibility", "Push to GitHub"]
+          },
+          { day: 35, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 6, title: "Agent Loop + Memory",
+        days: [
+          {
+            day: 36, topic: "The agent loop",
+            learn: "An agent loops: LLM decides action, execute it, feed result back, LLM decides next action, repeat until done.",
+            outcome: "A loop that keeps calling LLM and tools until LLM decides it is done with no more tool calls.",
+            practice: "'Find the weather in Delhi and convert the temperature to Fahrenheit' needs 2 tool calls. Confirm loop runs twice automatically.",
+            tasks: ["Write while loop: keep calling LLM until no tool_calls in response", "Add max_iterations=10 to prevent infinite loops", "Test with a 2-step question"]
+          },
+          {
+            day: 37, topic: "Multi-step reasoning",
+            learn: "Complex questions need multiple tool calls in sequence. The agent plans steps automatically.",
+            outcome: "Agent correctly answers a 3-step question using 3 sequential tool calls.",
+            practice: "'What is the population of Mumbai divided by the population of Delhi?' needs 2 searches plus 1 calculation.",
+            tasks: ["Test 3-step question end to end", "Print each tool call and result in sequence", "Confirm final answer uses all 3 results correctly"]
+          },
+          {
+            day: 38, topic: "Agent memory across turns",
+            learn: "Agents need memory too. Users refer to earlier parts of the conversation mid-session.",
+            outcome: "Agent remembers context from 5 turns ago and uses it in tool calls.",
+            practice: "Turn 1: 'I am planning a trip to Goa.' Turn 5: 'What is the weather there?' Agent should call get_weather('Goa') without being told again.",
+            tasks: ["Persist full conversation history including tool calls and results", "Test reference to earlier context", "Confirm agent recalls without being reminded"]
+          },
+          {
+            day: 39, topic: "Stop conditions",
+            learn: "Agents need clear rules for when to stop. No more tool calls, max steps reached, or explicit done signal.",
+            outcome: "Agent stops cleanly under 3 different conditions.",
+            practice: "Test: 1) natural completion, 2) max_iterations hit, 3) tool returns DONE signal. Confirm all 3 stop correctly.",
+            tasks: ["Add 3 stop conditions: no tool_calls, max_iter, done signal", "Test each condition explicitly", "Print reason for stopping each time"]
+          },
+          {
+            day: 40, topic: "Test complex questions",
+            learn: "Real agent quality shows only on complex multi-hop questions, not simple ones.",
+            outcome: "Agent handles 5 complex multi-step questions correctly.",
+            practice: "'Research the top 3 cricketers by average, find their nationalities, then tell me the GDP of each country.'",
+            tasks: ["Write 5 complex multi-step questions", "Run all 5 through your agent", "Log: steps taken, tools called, final answer quality"]
+          },
+          {
+            day: 41, topic: "Buffer + fix",
+            learn: "Fix the weakest answers from your complex question tests.",
+            outcome: "Agent runs cleanly on all 5 complex questions.",
+            practice: "For each failure: is it wrong tool selection, bad parsing, or wrong final answer? Fix the root cause.",
+            tasks: ["Debug weakest answers", "Fix root cause of each failure", "Push fixes to GitHub"]
+          },
+          { day: 42, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 7, title: "Real Tools — Web + APIs",
+        days: [
+          {
+            day: 43, topic: "Web search tool",
+            learn: "Real agents search the web. This turns your agent from a toy into something actually useful.",
+            outcome: "Agent can search the web and answer questions about current events.",
+            practice: "'Who won IPL 2025?' Agent calls search('IPL 2025 winner') and returns a current result.",
+            tasks: ["Use duckduckgo-search pip package (free, no API key)", "Wrap as a tool with query parameter", "Test 3 current-events questions"]
+          },
+          {
+            day: 44, topic: "External API tool",
+            learn: "Any REST API becomes a tool. Weather, stocks, maps, currency. The pattern is identical every time.",
+            outcome: "Agent integrates one real free API such as weather or currency exchange.",
+            practice: "Add OpenWeatherMap free key or ExchangeRate-API free. Test: 'What is 500 EUR in INR right now?'",
+            tasks: ["Pick one free API: weather or currency", "Wrap as tool with clear schema", "Test 3 real queries against it"]
+          },
+          {
+            day: 45, topic: "Connect RAG as a tool",
+            learn: "Your Month 1 RAG chatbot becomes just another tool the agent can call when needed.",
+            outcome: "Agent calls search_my_docs() tool when the question needs personal or local knowledge.",
+            practice: "'What skills are on my resume?' -> agent calls search_my_docs('skills') -> returns from your vector DB.",
+            tasks: ["Wrap your Month 1 rag_query() as a tool called search_my_docs", "Test: question needing web vs question needing your docs", "Confirm agent picks the right tool each time"]
+          },
+          {
+            day: 46, topic: "Multi-hop real queries",
+            learn: "Combining web, docs, and calculator tools shows real-world agent capability.",
+            outcome: "Agent answers a question requiring 3 different tool types in sequence.",
+            practice: "'Search my resume for my top skills, find current salaries for those skills, then calculate the average salary.'",
+            tasks: ["Run the 3-tool question above", "Print full tool call chain", "Confirm final answer is accurate"]
+          },
+          {
+            day: 47, topic: "Robustness testing",
+            learn: "Production agents fail in creative ways. Test edge cases now, not after deployment.",
+            outcome: "Agent handles 5 edge cases without crashing.",
+            practice: "Test: empty search results, API timeout, ambiguous question, question with no right tool, question needing 5 or more steps.",
+            tasks: ["Test 5 edge cases explicitly", "Confirm graceful failure or correct handling for each", "Fix the worst 2 failures"]
+          },
+          {
+            day: 48, topic: "Buffer + polish",
+            learn: "All tools tested and working on real queries.",
+            outcome: "Agent works cleanly on all real queries.",
+            practice: "Ask a friend to test your agent. Fix whatever confuses them.",
+            tasks: ["Get one person to test your agent", "Fix top 2 usability issues they find", "Push to GitHub"]
+          },
+          { day: 49, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 8, title: "Ship Project 2 — Interview Ready",
+        days: [
+          {
+            day: 50, topic: "Streamlit UI for agent",
+            learn: "Show tool calls transparently in the UI. Interviewers love seeing the reasoning chain.",
+            outcome: "UI shows: user question, which tools were called, and the final answer. All visible.",
+            practice: "Add a Streamlit expander showing 'Tools used: [search_web, calculate]' for each response.",
+            tasks: ["Add Streamlit UI with tool call visibility", "Show tool names, args, and results in expander", "Demo end-to-end in browser"]
+          },
+          {
+            day: 51, topic: "Architecture diagram",
+            learn: "Draw the agent loop with arrows showing: LLM -> tool decision -> executor -> result -> LLM again.",
+            outcome: "Diagram showing full agent loop with all tools labelled.",
+            practice: "Draw in Excalidraw. Show the loop with arrows. Label each tool in your toolkit.",
+            tasks: ["Draw agent loop diagram in Excalidraw", "Add to GitHub README", "Label all tools"]
+          },
+          {
+            day: 52, topic: "README + decisions",
+            learn: "Explaining how you prevented infinite loops signals real engineering maturity.",
+            outcome: "README with: what it does, tools available, architecture, hardest problem solved.",
+            practice: "Write: 'How did you prevent infinite loops?' Your answer reveals how deeply you understand agents.",
+            tasks: ["Write README with technical decisions", "Explain loop termination strategy", "Explain tool selection approach"]
+          },
+          {
+            day: 53, topic: "Demo + narrative",
+            learn: "The multi-step tool chain is the impressive part. Show that in your demo.",
+            outcome: "60 second demo showing multi-step tool use, pushed to GitHub.",
+            practice: "Show a 3-tool question in your demo so viewers can see the reasoning chain clearly.",
+            tasks: ["Record demo showing multi-step tool chain", "Embed in README", "Write 2-minute project pitch"]
+          },
+          {
+            day: 54, topic: "Hard interview Q prep",
+            learn: "Prepare for agent-specific questions that most candidates cannot answer well.",
+            outcome: "Written answers to 5 hard agent questions you can speak to confidently.",
+            practice: "Answer: 1) Prevent infinite loops? 2) Conflicting tool results? 3) Add a new tool? 4) Evaluate agent quality? 5) When NOT to use an agent?",
+            tasks: ["Answer all 5 questions in writing", "Reference your actual project in each", "Push final code and docs to GitHub"]
+          },
+          {
+            day: 55, topic: "Compare raw vs LangChain agents",
+            learn: "You built an agent from scratch. Now rewrite it with LangChain to see what it actually abstracts.",
+            outcome: "Same agent in 40% fewer lines using LangChain. You can explain every abstraction.",
+            practice: "Use LangChain AgentExecutor. Note what you had to write manually that LangChain now handles automatically.",
+            tasks: ["Rewrite agent using LangChain AgentExecutor", "Count lines: raw vs LangChain", "Note 3 things LangChain abstracts that you wrote manually"]
+          },
+          { day: 56, topic: "Rest + plan Month 3", learn: "", outcome: "", practice: "", tasks: ["Off. Project 2 is done.", "Light read: what RAGAS eval framework is"] },
+        ]
+      },
+    ]
+  },
+  {
+    month: 3, title: "LangChain + Eval + Production", color: "#5B4B8A",
+    weeks: [
+      {
+        week: 9, title: "LangChain Depth",
+        days: [
+          {
+            day: 57, topic: "LangChain chains",
+            learn: "LangChain chains link prompts, parsers, and models together. Think of it as a pipeline builder.",
+            outcome: "A chain that translates English to Hindi, then summarises the result. Two steps chained.",
+            practice: "Build using LCEL: prompt | model | output_parser. Compare to raw API calls. Same result, less code.",
+            tasks: ["Build a 2-step chain using LCEL syntax", "Add an output parser to extract clean text", "Compare to your raw API version and note what LCEL handles"]
+          },
+          {
+            day: 58, topic: "LangChain RAG",
+            learn: "LangChain has built-in RAG components. RetrievalQA, VectorStoreRetriever. Rebuild Month 1 in 20 lines.",
+            outcome: "Month 1 RAG chatbot rebuilt using LangChain in under 30 lines.",
+            practice: "Run your eval.py on the new LangChain version. Confirm same or better score vs your raw version.",
+            tasks: ["Rebuild RAG using LangChain components", "Run eval.py on the new version", "Compare score vs your raw version"]
+          },
+          {
+            day: 59, topic: "LangChain memory",
+            learn: "LangChain ConversationBufferMemory handles context automatically. No manual message list management.",
+            outcome: "Conversational RAG that remembers the full session using LangChain memory.",
+            practice: "Say your name. Three messages later ask 'What is my name?' Confirm memory works without manual tracking.",
+            tasks: ["Add ConversationBufferMemory to your LangChain RAG", "Test 5-turn conversation with context references", "Compare to your manual memory from Month 1"]
+          },
+          {
+            day: 60, topic: "LangChain agents",
+            learn: "LangChain AgentExecutor handles the tool loop, parsing, and stop conditions you built manually.",
+            outcome: "Month 2 agent rebuilt using LangChain in 30% fewer lines.",
+            practice: "Wrap your 4 tools as LangChain Tools. Use AgentExecutor. Run your 5 complex test questions and confirm same results.",
+            tasks: ["Wrap tools as LangChain Tool objects", "Use AgentExecutor with your tools", "Run 5 complex questions, confirm correct answers"]
+          },
+          {
+            day: 61, topic: "When to use LangChain vs raw",
+            learn: "LangChain is great for prototyping but adds abstraction layers that hide bugs in production.",
+            outcome: "A written decision framework: when you would use LangChain vs raw API calls.",
+            practice: "Write 3 situations where you would use LangChain. Write 3 where you would go raw. Be specific. This is an interview question.",
+            tasks: ["Write 3 LangChain use cases", "Write 3 raw API use cases", "Push to GitHub as DECISIONS.md"]
+          },
+          {
+            day: 62, topic: "Buffer",
+            learn: "Clean organised repos signal professionalism.",
+            outcome: "Both projects updated with LangChain versions alongside raw versions.",
+            practice: "Each project should have a raw/ folder and a langchain/ folder. Confirm both work.",
+            tasks: ["Organise repos: raw/ vs langchain/ folders", "Confirm both versions work", "Push clean code"]
+          },
+          { day: 63, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 10, title: "Eval Frameworks",
+        days: [
+          {
+            day: 64, topic: "RAGAS basics",
+            learn: "RAGAS is the industry standard for RAG evaluation. It gives you 4 objective scores instead of gut feel.",
+            outcome: "RAGAS installed and running on your Month 1 RAG with 4 scores printed.",
+            practice: "pip install ragas. Run on your eval set. Print: faithfulness, answer_relevancy, context_recall, context_precision.",
+            tasks: ["pip install ragas", "Format your eval.json for RAGAS input", "Run and print all 4 scores"]
+          },
+          {
+            day: 65, topic: "Faithfulness score",
+            learn: "Faithfulness measures if the answer is grounded in the retrieved context. It catches hallucinations.",
+            outcome: "You know your faithfulness score and what is causing any drops.",
+            practice: "Print the 2 answers with lowest faithfulness. Did the LLM add info not in the chunks? Tighten your generation prompt.",
+            tasks: ["Identify 2 lowest-faithfulness answers", "Check if LLM added info not in context", "Tighten generation prompt and re-run"]
+          },
+          {
+            day: 66, topic: "Context recall score",
+            learn: "Context recall measures if the right chunks were retrieved. Low score means retrieval is the problem.",
+            outcome: "You know your recall score and have fixed at least one retrieval gap.",
+            practice: "For each low-recall question: print what was retrieved vs what should have been. Fix chunk size or increase k.",
+            tasks: ["Identify low-recall questions", "Print retrieved vs expected chunks", "Fix retrieval and re-run RAGAS"]
+          },
+          {
+            day: 67, topic: "Track scores over time",
+            learn: "Tracking scores over time shows you are improving methodically, not just guessing.",
+            outcome: "A scores.csv tracking all 4 RAGAS metrics per run with date.",
+            practice: "Create scores.csv: date, faithfulness, answer_relevancy, context_recall, context_precision. Run after every change.",
+            tasks: ["Create scores.csv tracking file", "Log all 4 scores with date", "Run after every change to track improvement"]
+          },
+          {
+            day: 68, topic: "Improve scores",
+            learn: "Each RAGAS score points to a specific part of your pipeline. Fix the right component for each score.",
+            outcome: "At least 2 RAGAS scores improved vs your baseline.",
+            practice: "If faithfulness is low: fix generation prompt. If recall is low: fix retrieval. If relevancy is low: fix chunking.",
+            tasks: ["Pick 2 lowest scores", "Apply targeted fix for each", "Re-run RAGAS and log new scores in CSV"]
+          },
+          {
+            day: 69, topic: "Add scores to README",
+            learn: "Showing RAGAS scores in your README signals serious engineering. Most candidates never measure anything.",
+            outcome: "README shows a table: Metric, Score, Baseline, Improvement.",
+            practice: "Add table to README. Include one line on how you improved each score. Interviewers rarely see this level of rigour.",
+            tasks: ["Add RAGAS scores table to README", "Include baseline vs improved scores", "Add one line on how you improved each score"]
+          },
+          { day: 70, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 11, title: "Prompt Engineering Depth",
+        days: [
+          {
+            day: 71, topic: "Few-shot prompting",
+            learn: "Few-shot = give the LLM 3 to 5 examples of input and output in the prompt. Accuracy jumps significantly.",
+            outcome: "Your JSON extractor from Day 4 improves measurably by adding 3 examples to the prompt.",
+            practice: "Add 3 input/output examples to your extraction prompt. Run 10 test inputs. Measure how many parse correctly now vs before.",
+            tasks: ["Add 3 input/output examples to extraction prompt", "Run 10 test inputs", "Measure correct JSON: before vs after"]
+          },
+          {
+            day: 72, topic: "Chain of thought",
+            learn: "Chain of thought = tell the model to reason step by step before answering. Cuts errors on complex tasks.",
+            outcome: "A reasoning-heavy task improves with CoT prompting. You have numbers to prove it.",
+            practice: "Add 'Think step by step:' to your prompt. Compare answers on 5 complex questions. Note which improved.",
+            tasks: ["Add CoT instruction to prompt", "Test 5 complex questions", "Count how many improved vs standard prompt"]
+          },
+          {
+            day: 73, topic: "Prompt versioning",
+            learn: "Track prompt versions and their scores. This separates hobbyists from engineers.",
+            outcome: "A prompts/ folder with v1.txt, v2.txt and scores.csv tracking each version's performance.",
+            practice: "For each prompt change: save new version, run eval, log score. Never lose a prompt that worked.",
+            tasks: ["Create prompts/ folder with versioned files", "Log scores in CSV with version and date", "Never overwrite. Always create new version."]
+          },
+          {
+            day: 74, topic: "Prompt optimisation project",
+            learn: "Combine everything: pick one task, run eval, improve prompt, measure, repeat until score plateaus.",
+            outcome: "One task with 3 prompt versions showing measurable improvement from v1 to v3.",
+            practice: "Pick: classification, extraction, or summarisation. v1: zero-shot. v2: few-shot. v3: CoT + few-shot. Log all scores.",
+            tasks: ["Pick one NLP task to optimise", "Run eval on v1, v2, v3 prompts", "Show score improvement across all 3 versions"]
+          },
+          {
+            day: 75, topic: "Document findings",
+            learn: "Written findings from experiments become portfolio gold and interview talking points.",
+            outcome: "PROMPTS.md showing what worked, what failed, and why.",
+            practice: "Write: what I learned about prompting this week. 3 patterns that worked. 2 that failed and why.",
+            tasks: ["Write PROMPTS.md with findings", "Include: what worked, what failed, why", "Push to GitHub"]
+          },
+          {
+            day: 76, topic: "Buffer",
+            learn: "Catch up on the weakest area from this month.",
+            outcome: "All Month 3 code polished and pushed.",
+            practice: "Review your RAGAS scores. If any are below 0.7, spend today fixing the weakest one.",
+            tasks: ["Catch up on weakest area this month", "Polish code and docs", "Push all final code"]
+          },
+          { day: 77, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 12, title: "Combine + Deploy",
+        days: [
+          {
+            day: 78, topic: "Combine RAG + agent",
+            learn: "Production AI systems combine RAG and agents. RAG for knowledge retrieval, agents for taking actions.",
+            outcome: "One system where the agent calls RAG as one of its tools alongside web search and calculator.",
+            practice: "Test both routing paths: 'What skills are on my resume?' uses search_my_docs. 'Who won IPL 2025?' uses web_search.",
+            tasks: ["Connect Month 1 RAG and Month 2 agent", "Agent routes between search_my_docs vs web_search", "Test both routing paths explicitly"]
+          },
+          {
+            day: 79, topic: "LLM-based routing",
+            learn: "Routing = decide which pipeline to use per query. LLM-based routing beats hardcoded if/else every time.",
+            outcome: "LLM correctly routes 10 test questions to either RAG, web search, or calculator.",
+            practice: "'What are my skills?' -> RAG. 'Who won IPL 2025?' -> web. 'What is 45 * 23?' -> calculator. All in one system.",
+            tasks: ["Add LLM-based router before main pipeline", "Test 10 questions across 3 routes", "Confirm correct routing for all 10"]
+          },
+          {
+            day: 80, topic: "Deploy to Hugging Face Spaces",
+            learn: "Free deployment that gives you a live URL to share with recruiters. No AWS account needed.",
+            outcome: "Combined RAG and agent app live at a public Hugging Face URL.",
+            practice: "Create Hugging Face account. New Space. Choose Streamlit. Add app.py and requirements.txt. Share the URL.",
+            tasks: ["Create Hugging Face Space", "Deploy app with requirements.txt", "Get live URL and test it thoroughly"]
+          },
+          {
+            day: 81, topic: "Update all GitHub repos",
+            learn: "Three clean repos with READMEs, demos, and RAGAS scores is a strong portfolio.",
+            outcome: "3 clean GitHub repos: RAG chatbot, Agent, Combined system. All with demos and scores.",
+            practice: "Each repo should be understandable in 30 seconds of reading. Headline, GIF, scores, tech stack.",
+            tasks: ["Polish all 3 READMEs", "Add live demo URLs to each", "Add RAGAS scores to RAG project README"]
+          },
+          {
+            day: 82, topic: "Month review",
+            learn: "Articulating what you built sharpens your interview answers.",
+            outcome: "200-word written summary of Month 3 builds and your strongest and weakest areas.",
+            practice: "Write: what I built, what scores I achieved, what I would do differently. This becomes interview talking points.",
+            tasks: ["Write 200-word month review", "List your 3 strongest skills now", "List your 2 weakest areas to improve in Month 4"]
+          },
+          {
+            day: 83, topic: "Buffer",
+            learn: "Use this day to finish anything incomplete.",
+            outcome: "All 3 projects fully deployed and documented.",
+            practice: "Check all 3 live URLs work. Check all READMEs make sense to someone who has never seen your code.",
+            tasks: ["Test all 3 live URLs", "Confirm all READMEs are clear", "Push all final code"]
+          },
+          { day: 84, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off. You have 3 live projects now."] },
+        ]
+      },
+    ]
+  },
+  {
+    month: 4, title: "Capstone + Portfolio + Apply", color: "#A14E4E",
+    weeks: [
+      {
+        week: 13, title: "Plan + Start Capstone",
+        days: [
+          {
+            day: 85, topic: "Pick your capstone",
+            learn: "Your capstone should solve a problem you would actually use. Authentic projects interview better than textbook ones.",
+            outcome: "A one-page spec: problem, solution approach, tech stack, what makes it non-trivial.",
+            practice: "Ideas: AI support bot, personal finance doc analyser, code review agent, HR policy RAG. Pick the one you would actually use.",
+            tasks: ["Write one-page project spec", "Confirm: RAG + agent + real use case", "Validate: would someone pay for this?"]
+          },
+          {
+            day: 86, topic: "System design",
+            learn: "Design before coding. A clear architecture prevents rework and shows engineering maturity.",
+            outcome: "Architecture diagram: every component, every data flow, every API call mapped out.",
+            practice: "Draw: user -> UI -> API -> router -> RAG / agent -> LLM -> response. Label all external services.",
+            tasks: ["Draw full system architecture in Excalidraw", "Label every component and connection", "Identify 3 potential failure points"]
+          },
+          {
+            day: 87, topic: "FastAPI backend setup",
+            learn: "FastAPI is what AI product companies use for ML APIs. Dead simple and production-ready.",
+            outcome: "FastAPI backend with 3 endpoints: /ingest, /query, /health. All returning correct status.",
+            practice: "POST /ingest: accepts document, returns status ok. POST /query: accepts question, returns answer. GET /health: returns running.",
+            tasks: ["Set up FastAPI project structure", "Create 3 endpoints: ingest, query, health", "Test all 3 with curl or Postman"]
+          },
+          {
+            day: 88, topic: "Build ingestion endpoint",
+            learn: "The /ingest endpoint wires your Month 1 pipeline to an HTTP API that any frontend can call.",
+            outcome: "POST /ingest accepts PDF or text, chunks it, embeds it, stores in vector DB.",
+            practice: "Upload your resume via POST /ingest. Confirm it is stored. Then query it via POST /query.",
+            tasks: ["Wire ingest endpoint to Month 1 pipeline", "Test with real document upload", "Confirm document is queryable after ingestion"]
+          },
+          {
+            day: 89, topic: "Build query endpoint",
+            learn: "The /query endpoint does full RAG plus agent routing and returns structured JSON.",
+            outcome: "POST /query does full pipeline and returns: answer, sources, tools_called, confidence.",
+            practice: "Response format: {answer: string, sources: [chunk1, chunk2], tool_calls: [], confidence: high}",
+            tasks: ["Wire query endpoint to RAG + agent", "Return structured JSON with sources", "Test 10 queries end to end"]
+          },
+          {
+            day: 90, topic: "Buffer + fix",
+            learn: "Fix the top 3 bugs from testing before moving to the frontend.",
+            outcome: "Backend runs cleanly on all test queries.",
+            practice: "Run 20 diverse queries. Fix any that fail or return wrong format.",
+            tasks: ["Run 20 diverse queries against backend", "Fix top 3 bugs", "Push to GitHub"]
+          },
+          { day: 91, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 14, title: "Frontend + Polish Capstone",
+        days: [
+          {
+            day: 92, topic: "React frontend",
+            learn: "You are a fullstack dev. Use React, not Streamlit, for your capstone. It shows the full stack.",
+            outcome: "React frontend connected to FastAPI backend, showing answers with source citations.",
+            practice: "Build a chat interface. Show: user message, loading state, answer with sources highlighted below.",
+            tasks: ["Create React frontend with chat UI", "Connect to FastAPI /query endpoint", "Show sources below each answer"]
+          },
+          {
+            day: 93, topic: "Document upload UI",
+            learn: "The upload flow is what makes this feel like a real product, not a demo.",
+            outcome: "User uploads a PDF in the browser and immediately starts asking questions about it.",
+            practice: "File input -> call POST /ingest -> show 'Document indexed! You can now ask questions.' -> enable chat.",
+            tasks: ["Add file upload to React UI", "Call /ingest on upload, show success message", "Disable chat until document is loaded"]
+          },
+          {
+            day: 94, topic: "Error states + loading",
+            learn: "Production UI shows loading spinners and clear error messages, never blank screens.",
+            outcome: "Every API failure shows a specific error message. Every API call shows a loading state.",
+            practice: "Force your backend to fail. Confirm frontend shows 'Something went wrong, please try again' instead of crashing.",
+            tasks: ["Add loading spinner on every API call", "Add error messages for every failure mode", "Test: what happens when backend is down"]
+          },
+          {
+            day: 95, topic: "Integration test",
+            learn: "Testing as a real user finds problems that code review misses.",
+            outcome: "Full user journey works: upload doc, ask 5 questions, get accurate answers with sources.",
+            practice: "Do a full walkthrough as a first-time user. Find and fix the 3 most annoying things.",
+            tasks: ["Full end-to-end user journey test", "Fix top 3 UX friction points", "Get one friend to test and report issues"]
+          },
+          {
+            day: 96, topic: "Performance basics",
+            learn: "Slow RAG kills user experience. Basic streaming makes a huge perceived speed difference.",
+            outcome: "Query response time under 5 seconds for typical questions.",
+            practice: "Time 10 queries. If any take over 5 seconds, identify the bottleneck and add streaming or caching.",
+            tasks: ["Time 10 queries and print response times", "Identify slowest step in pipeline", "Add streaming response if LLM call is the bottleneck"]
+          },
+          {
+            day: 97, topic: "Buffer",
+            learn: "Fix remaining bugs before deployment.",
+            outcome: "Full capstone works end to end without any crashes.",
+            practice: "Do one final complete walkthrough from fresh state. Fix anything that breaks.",
+            tasks: ["Final end-to-end walkthrough", "Fix remaining bugs", "Push full project to GitHub"]
+          },
+          { day: 98, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 15, title: "Deploy Capstone",
+        days: [
+          {
+            day: 99, topic: "Deploy backend to Railway",
+            learn: "Railway.app gives free cloud hosting for FastAPI. One command deploy, no DevOps knowledge needed.",
+            outcome: "FastAPI backend live at a public URL with API keys stored as environment variables.",
+            practice: "Install Railway CLI. Run railway up. Test: curl your live /health endpoint and confirm it responds.",
+            tasks: ["Create Railway account (free tier)", "Deploy FastAPI backend", "Test live /health endpoint with curl"]
+          },
+          {
+            day: 100, topic: "Deploy frontend to Vercel",
+            learn: "Vercel deploys React in 2 minutes. Free, fast, and looks professional.",
+            outcome: "React frontend live at a public URL, connected to your Railway backend.",
+            practice: "Update API base URL to your Railway URL. Push to GitHub. Connect repo to Vercel. It auto-deploys.",
+            tasks: ["Update API URL in React to Railway URL", "Connect GitHub repo to Vercel", "Test full app on both live URLs"]
+          },
+          {
+            day: 101, topic: "Secrets and environment vars",
+            learn: "Never hardcode API keys. Environment variables on Railway and Vercel keep secrets out of code.",
+            outcome: "Zero API keys in your codebase. All secrets in Railway and Vercel environment settings.",
+            practice: "Search your codebase for any hardcoded keys. Move all to env vars. Confirm app still works.",
+            tasks: ["Audit codebase for hardcoded keys", "Move all secrets to Railway/Vercel env vars", "Confirm app works with no keys in code"]
+          },
+          {
+            day: 102, topic: "Test in production",
+            learn: "Production always breaks in new ways. Test everything on live URLs, not just local.",
+            outcome: "All 10 eval questions answered correctly on the live deployed app.",
+            practice: "Run eval.py pointing at the live URL. Fix any failures. Prod failures are usually env or CORS issues.",
+            tasks: ["Run eval.py against live production URL", "Fix any CORS or env errors", "Confirm all 10 eval questions pass on live URL"]
+          },
+          {
+            day: 103, topic: "Share and get feedback",
+            learn: "Real user feedback on a live app is the best kind of testing.",
+            outcome: "App shared with 3 people. Top issue they report is fixed.",
+            practice: "Share the live URL. Ask: what confused you? What did not work? Fix the top issue same day.",
+            tasks: ["Share live URL with 3 people", "Collect their top complaints", "Fix the most reported issue"]
+          },
+          {
+            day: 104, topic: "Buffer",
+            learn: "Fix remaining issues before portfolio polish begins.",
+            outcome: "Capstone fully deployed and working on live URLs.",
+            practice: "Test all 3 live projects: RAG chatbot on HF Spaces, agent on HF Spaces, capstone on Vercel/Railway.",
+            tasks: ["Test all 3 live project URLs", "Fix any that are broken or slow", "All final code pushed to GitHub"]
+          },
+          { day: 105, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 16, title: "Portfolio + Resume + Start Applying",
+        days: [
+          {
+            day: 106, topic: "Update LinkedIn headline",
+            learn: "LinkedIn is how recruiters find you. Your headline must say AI engineer to appear in AI engineer searches.",
+            outcome: "LinkedIn headline updated to: 'Fullstack + AI Engineer | RAG | Agents | LangChain | Python'",
+            practice: "Search LinkedIn for 'AI engineer India'. Look at how top profiles describe themselves. Model yours on the best.",
+            tasks: ["Update LinkedIn headline", "Update About section: mention RAG, agents, LangChain", "Add all 3 projects to Featured section with live links"]
+          },
+          {
+            day: 107, topic: "LinkedIn posts about projects",
+            learn: "Posts about what you built get recruiter attention. Far more effective than just updating your profile.",
+            outcome: "3 LinkedIn posts drafted, one per project, with demo GIF or screenshot.",
+            practice: "Format: 'I built X using Y. Here is what I learned: 3 bullet points. Live demo: link.' Under 150 words.",
+            tasks: ["Draft 3 LinkedIn posts, one per project", "Add demo GIF or screenshot to each", "Post one now, schedule others one week apart"]
+          },
+          {
+            day: 108, topic: "Update resume",
+            learn: "Reframe your fullstack experience as AI-relevant. Your past work has been preparing you for this.",
+            outcome: "1-page resume that leads with AI skills and reframes past work as ML-adjacent.",
+            practice: "Skills section leads with: Python, LangChain, RAG, Vector DBs, LLM APIs. Rewrite 2 past bullets to highlight data or API work.",
+            tasks: ["Lead skills section with AI stack", "Rewrite 2 past bullets to be AI-adjacent", "Add 3 projects with live demo links and RAGAS scores"]
+          },
+          {
+            day: 109, topic: "Portfolio page",
+            learn: "A personal portfolio page with live project links is more impressive than a PDF resume alone.",
+            outcome: "A simple webpage at yourname.vercel.app with one card per project.",
+            practice: "Build in React. One card: title, what it does, tech stack, demo link, GitHub link. Deploy to Vercel.",
+            tasks: ["Build portfolio page in React", "One card per project with all links", "Deploy to Vercel"]
+          },
+          {
+            day: 110, topic: "Cold outreach prep",
+            learn: "Referrals get 5x more interview callbacks than cold applications. Find connections first.",
+            outcome: "List of 10 target companies and 20 contacts to reach out to on LinkedIn.",
+            practice: "Message format: 'Hey [name], I built [project with live link] and am exploring AI engineer roles. I noticed you are at [company]. Would you be open to a quick chat?'",
+            tasks: ["List 10 target companies: product startups and GCCs", "Find 2 contacts per company on LinkedIn", "Draft 3-line outreach message with your live project link"]
+          },
+          {
+            day: 111, topic: "Start applying",
+            learn: "Start applying before you feel ready. Interview feedback tells you what to fix better than self-study.",
+            outcome: "10 applications submitted and 5 referral requests sent.",
+            practice: "Apply to roles where you are a 60-70% fit. Do not self-reject. Apply and let them decide.",
+            tasks: ["Submit 10 job applications", "Send 5 referral request messages", "Track in spreadsheet: company, role, date, status"]
+          },
+          { day: 112, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off. You have 3 projects, a portfolio, and applications out."] },
+        ]
+      },
+    ]
+  },
+  {
+    month: 5, title: "Interview Prep + Close Offers", color: "#3C5A6B",
+    weeks: [
+      {
+        week: 17, title: "Technical Interview Prep",
+        days: [
+          {
+            day: 113, topic: "AI interview question bank",
+            learn: "AI engineer interviews have a predictable pattern. Prep the 20 questions that appear 80% of the time.",
+            outcome: "A personal Q&A doc with written answers to 20 common AI engineer interview questions.",
+            practice: "Start with: Explain RAG simply. How does a vector DB work. Fine-tuning vs RAG. What is hallucination and how do you reduce it.",
+            tasks: ["Write answers to 20 common AI interview questions", "Each answer under 5 sentences. No rambling.", "Reference your own projects in every single answer"]
+          },
+          {
+            day: 114, topic: "RAG system design",
+            learn: "System design interviews ask: design a RAG system for 1 million documents. You need a rehearsed answer.",
+            outcome: "A written and diagrammed answer to: design a production RAG system for 1M docs from scratch.",
+            practice: "Cover: ingestion pipeline, chunking, embedding choice, vector DB, retrieval, reranking, generation, eval, monitoring.",
+            tasks: ["Write answer to: design RAG for 1M docs", "Draw the architecture", "Practice saying it out loud in under 5 minutes"]
+          },
+          {
+            day: 115, topic: "Agent system design",
+            learn: "Agent system design is less practiced by candidates. Preparing it well is a differentiator.",
+            outcome: "Written answer: design an agent that handles customer support queries for an e-commerce company.",
+            practice: "Cover: tools available, agent loop design, memory strategy, failure handling, eval approach, cost management.",
+            tasks: ["Write agent system design answer", "Cover: tools, loop, memory, failure, eval, cost", "Practice out loud, target under 5 minutes"]
+          },
+          {
+            day: 116, topic: "Python coding prep",
+            learn: "AI engineer coding rounds test: JSON handling, string manipulation, basic data structures, async calls.",
+            outcome: "10 Python problems solved cleanly in under 10 minutes each.",
+            practice: "Focus on: process a JSON response, chunk a string, compute cosine similarity, parse nested dicts, async API calls.",
+            tasks: ["Solve 10 Python problems timed", "Focus on AI-relevant patterns: JSON, strings, async", "Review any that took over 10 minutes"]
+          },
+          {
+            day: 117, topic: "LLM-specific Q prep",
+            learn: "These 10 LLM questions come up in almost every AI engineer technical round.",
+            outcome: "Written answers to 10 LLM-specific questions you can speak to confidently.",
+            practice: "Answer: 1) Tokens vs words? 2) Context window limits? 3) Temperature vs top-p? 4) Fine-tuning vs RAG? 5) Embedding models vs LLMs? 6) Prompt injection? 7) Latency vs accuracy? 8) Cost optimisation? 9) Streaming? 10) Open source vs proprietary?",
+            tasks: ["Write answers to all 10 LLM questions", "Keep each under 4 sentences", "Reference your projects where possible"]
+          },
+          {
+            day: 118, topic: "Full mock interview",
+            learn: "Doing a mock interview reveals gaps that self-study cannot. Record it and watch it back.",
+            outcome: "Full 45-minute mock interview completed, 3 improvements identified.",
+            practice: "Structure: 10 min project walkthrough, 15 min technical Q&A, 15 min system design, 5 min your questions. Record it.",
+            tasks: ["Do full 45-minute mock interview", "Record it and watch back", "Write 3 specific things to improve"]
+          },
+          { day: 119, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 18, title: "Apply Aggressively",
+        days: [
+          {
+            day: 120, topic: "Apply batch 2",
+            learn: "Volume matters. 10 applications rarely produce 1 offer. 50 applications produce 3 to 5 interviews.",
+            outcome: "20 more applications submitted. 30 total.",
+            practice: "Target: product startups Series A to C, GCCs like JP Morgan, Goldman, Walmart Tech, AI-first companies.",
+            tasks: ["Submit 20 more applications", "Track all in spreadsheet", "Personalise each application with one sentence about your project"]
+          },
+          {
+            day: 121, topic: "Referral outreach",
+            learn: "A referral from an insider is worth 20 cold applications. Spend real time on this.",
+            outcome: "10 referral requests sent to people you know at target companies.",
+            practice: "Message: 'Hey [name], I built [project with live link] and am exploring AI engineer roles. I noticed you are at [company]. Would you be open to referring me or a quick chat?'",
+            tasks: ["Send 10 referral request messages", "Include your live project link in every message", "Follow up on any that have not replied in 5 days"]
+          },
+          {
+            day: 122, topic: "Take-home assignment practice",
+            learn: "Many AI engineer interviews include a take-home: build a RAG or agent in 48 hours. Practice now.",
+            outcome: "One practice take-home completed: build a Q&A bot over provided documents in 48 hours.",
+            practice: "Time yourself. Build it. Polish README. Record demo. This is exactly what real take-homes look like.",
+            tasks: ["Find a practice take-home prompt online", "Complete it within 48 hours", "Polish README and demo as if submitting for real"]
+          },
+          {
+            day: 123, topic: "Screening call prep",
+            learn: "First calls are 30 minutes: tell me about yourself, walk me through a project, why AI engineering?",
+            outcome: "3-minute self-intro rehearsed: background, what you built, why AI engineer.",
+            practice: "Record yourself. Watch it back. You will immediately know what to fix.",
+            tasks: ["Write 3-minute self-intro script", "Record yourself delivering it", "Fix top 3 issues from watching it back"]
+          },
+          {
+            day: 124, topic: "Salary negotiation prep",
+            learn: "Quote 20 to 22 LPA to land at 18 to 20. Never accept the first offer without countering.",
+            outcome: "Written negotiation script for when they ask about salary expectations.",
+            practice: "Script: 'Based on my projects and production AI experience, I am targeting 20 to 22 LPA. Is there flexibility there?'",
+            tasks: ["Write your salary expectation script", "Write your counter-offer script", "Know your walk-away number: 15 LPA minimum"]
+          },
+          {
+            day: 125, topic: "Apply batch 3",
+            learn: "Keep applying even while interviewing. Your pipeline dries up if you stop.",
+            outcome: "40 total applications submitted.",
+            practice: "Include 3 stretch roles that feel slightly above you. Apply anyway and let them decide.",
+            tasks: ["Submit 10 more applications", "Include 3 stretch roles", "Follow up on applications from 2 weeks ago"]
+          },
+          { day: 126, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 19, title: "Interview Rounds",
+        days: [
+          {
+            day: 127, topic: "Screening calls",
+            learn: "Goal of screening: get to the technical round. Do not over-explain. Be concise and enthusiastic.",
+            outcome: "Clear all screening calls this week.",
+            practice: "Hit all 3 in every call: 2-minute intro, project walkthrough, genuine interest in their specific role.",
+            tasks: ["Attend all screening calls", "Lead with your capstone project", "Send thank-you email within 2 hours of each call"]
+          },
+          {
+            day: 128, topic: "Technical rounds",
+            learn: "Answer every technical question by referencing something you actually built. Theory alone fails.",
+            outcome: "Pass technical rounds by grounding every answer in your project experience.",
+            practice: "In my RAG chatbot, I faced this exact problem and solved it by... Use this structure for every answer.",
+            tasks: ["Attend technical rounds", "Reference your own projects in every answer", "Ask for feedback after each round"]
+          },
+          {
+            day: 129, topic: "System design rounds",
+            learn: "Ask clarifying questions first. State assumptions. Draw while talking. Cover failure modes.",
+            outcome: "Walk through your rehearsed RAG or agent system design clearly and confidently.",
+            practice: "Start every system design with: 'What scale are we designing for and what are the main constraints?'",
+            tasks: ["Use your Day 114 and 115 prep", "Draw while explaining every component", "Ask about scale and constraints before starting"]
+          },
+          {
+            day: 130, topic: "Behavioural rounds",
+            learn: "Behavioural rounds use STAR: Situation, Task, Action, Result. Prep 5 stories and time them.",
+            outcome: "5 STAR stories ready: bug fixed, tradeoff made, learning from failure, collaboration, handling ambiguity.",
+            practice: "Each story should be 90 seconds maximum. Record and time yourself.",
+            tasks: ["Write 5 STAR stories", "Time each to under 90 seconds", "Practice 2 stories per day"]
+          },
+          {
+            day: 131, topic: "Keep applying",
+            learn: "Keep applying even while in active interview loops. Pipelines dry up if you pause.",
+            outcome: "5 more applications submitted this week even during interview rounds.",
+            practice: "Rule: 2 hours on active interviews, 1 hour on new applications, 2 hours on project improvement.",
+            tasks: ["Submit 5 more applications", "Prep for upcoming interview rounds", "Improve one project based on interview feedback received"]
+          },
+          {
+            day: 132, topic: "Reflect + adjust",
+            learn: "If you are failing at the same stage repeatedly, fix that specific stage. Not everything.",
+            outcome: "Written review: which rounds went well, which failed, what to fix.",
+            practice: "Failing screening = fix your intro. Failing technical = more coding practice. Failing system design = more diagramming practice.",
+            tasks: ["Review all interview feedback received", "Identify the pattern in your failures", "Spend 3 hours fixing your weakest stage"]
+          },
+          { day: 133, topic: "Rest", learn: "", outcome: "", practice: "", tasks: ["Off"] },
+        ]
+      },
+      {
+        week: 20, title: "Close Offers",
+        days: [
+          {
+            day: 134, topic: "Evaluate offers",
+            learn: "Compare total compensation, growth, team quality, tech stack, and remote policy. Not just base salary.",
+            outcome: "An offer comparison spreadsheet with every offer scored on 6 dimensions.",
+            practice: "Dimensions: base salary, variable pay, tech stack, team size, product vs service, remote policy.",
+            tasks: ["Build offer comparison spreadsheet", "Score every offer on 6 dimensions", "Weight salary as 40% and other factors as 60%"]
+          },
+          {
+            day: 135, topic: "Negotiate every offer",
+            learn: "Every offer can be negotiated. Companies expect it. Not negotiating is leaving money on the table.",
+            outcome: "You countered at least once and improved the offer by at least 5%.",
+            practice: "'Thank you for the offer. Based on my projects and market rate for AI engineers, could we do X+2 LPA?' Always counter.",
+            tasks: ["Counter every offer received", "Ask for: higher base, joining bonus, or earlier appraisal", "Never accept on the spot. Always take 48 hours."]
+          },
+          {
+            day: 136, topic: "Create competing offers",
+            learn: "Multiple offers give you negotiating power. Use one offer to accelerate other processes.",
+            outcome: "Used one offer to accelerate 2 other interview processes.",
+            practice: "'I have an offer with a deadline. I am very interested in your company. Can we expedite the remaining rounds?'",
+            tasks: ["Tell other companies you have an offer", "Ask for expedited process", "Be honest about your timeline. Do not invent fake deadlines."]
+          },
+          {
+            day: 137, topic: "Close and sign",
+            learn: "Get everything in writing. Verbal offers mean nothing until the offer letter is signed.",
+            outcome: "Offer accepted in writing at 18 LPA or above.",
+            practice: "Review the offer letter carefully: salary, title, start date, variable components, appraisal cycle.",
+            tasks: ["Review offer letter carefully", "Confirm: salary, title, start date, appraisal cycle", "Sign and celebrate. You did it."]
+          },
+          {
+            day: 138, topic: "Serve notice professionally",
+            learn: "How you leave your current job matters. Burn no bridges. Handover cleanly.",
+            outcome: "Notice period plan ready. Current team has a clean handover.",
+            practice: "Use 1 hour per day during notice period to research your new company's tech stack.",
+            tasks: ["Submit resignation professionally", "Create handover document for your team", "Connect with future teammates on LinkedIn"]
+          },
+          {
+            day: 139, topic: "Prep for new role",
+            learn: "Arriving prepared on day 1 sets the tone for how your new team sees you.",
+            outcome: "You know your new company's AI products and tech stack before you start.",
+            practice: "Read everything public about your new company's AI features. Know their product better than expected.",
+            tasks: ["Research company AI products deeply", "Set up dev environment before day 1 if possible", "Prepare questions to ask your manager in week 1"]
+          },
+          {
+            day: 140, topic: "Rest and celebrate",
+            learn: "You went from fullstack developer to AI engineer in 5 months. That is a real achievement.",
+            outcome: "Fully rested and ready for your new role.",
+            practice: "Take a complete break. No coding. No LinkedIn. Recharge fully before starting.",
+            tasks: ["Take a real break", "Do something you enjoy that has nothing to do with tech", "You earned this."]
+          },
+        ]
+      },
+    ]
+  },
+];
+
