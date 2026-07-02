@@ -1,7 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
-import { completeDay } from "@/app/today/actions";
+import { useTracker } from "@/components/TrackerProvider";
 
 interface CompleteDayButtonProps {
   day: number;
@@ -16,7 +15,7 @@ export function CompleteDayButton({
   alreadyCompleted,
   isRestDay,
 }: CompleteDayButtonProps) {
-  const [isPending, startTransition] = useTransition();
+  const { completeDay } = useTracker();
 
   if (alreadyCompleted) {
     return (
@@ -30,15 +29,11 @@ export function CompleteDayButton({
     <div className="space-y-2">
       <button
         type="button"
-        disabled={!canComplete || isPending}
-        onClick={() =>
-          startTransition(() => {
-            void completeDay(day);
-          })
-        }
+        disabled={!canComplete}
+        onClick={() => completeDay(day)}
         className="w-full rounded-lg bg-zinc-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
       >
-        {isPending ? "Completing..." : `Complete Day ${day}`}
+        {`Complete Day ${day}`}
       </button>
       {!canComplete && (
         <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">

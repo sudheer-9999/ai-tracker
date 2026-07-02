@@ -1,6 +1,3 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
 import { getDayPlan, isMonthEndDay, isWeekEndDay } from "@/lib/curriculum";
 import { TOTAL_DAYS } from "@/lib/constants";
 import {
@@ -11,11 +8,12 @@ import {
   computeDayScore,
   updateStreak,
 } from "@/lib/scoring";
-import { getDayProgressKey, readState, writeState } from "@/lib/store";
+import { getDayProgressKey } from "@/lib/store";
 import {
   createEmptyDayProgress,
   type DayProgress,
   type Reflection,
+  type TrackerState,
 } from "@/lib/types";
 
 function ensureProgress(
@@ -34,8 +32,11 @@ function ensureProgress(
   return progress;
 }
 
-export async function toggleTask(day: number, taskId: string) {
-  const state = await readState();
+export function toggleTask(
+  state: TrackerState,
+  day: number,
+  taskId: string,
+): void {
   if (day !== state.currentDay) return;
 
   const progress = ensureProgress(state.dayProgress, day);
@@ -45,43 +46,38 @@ export async function toggleTask(day: number, taskId: string) {
   } else {
     progress.tasksCompleted.push(taskId);
   }
-
-  await writeState(state);
-  revalidatePath("/today");
-  revalidatePath("/");
 }
 
-export async function saveTimeSpent(day: number, minutes: number) {
-  const state = await readState();
+export function saveTimeSpent(
+  state: TrackerState,
+  day: number,
+  minutes: number,
+): void {
   if (day !== state.currentDay) return;
 
   const progress = ensureProgress(state.dayProgress, day);
   progress.timeSpentMinutes = Math.max(0, minutes);
-
-  await writeState(state);
-  revalidatePath("/today");
-  revalidatePath("/");
 }
 
-export async function saveReflection(
+export function saveReflection(
+  state: TrackerState,
   day: number,
   field: keyof Reflection,
   value: string,
-) {
-  const state = await readState();
+): void {
   if (day !== state.currentDay) return;
 
   const progress = ensureProgress(state.dayProgress, day);
   progress.reflection[field] = value;
-
-  await writeState(state);
-  revalidatePath("/today");
-  revalidatePath("/");
 }
 
-export async function completeDay(day: number) {
-  const state = await readState();
-  if (day !== state.currentDay) return { error: "Can only complete the current day" };
+export function completeDay(
+  state: TrackerState,
+  day: number,
+): { error?: string; success?: boolean; score?: number } {
+  if (day !== state.currentDay) {
+    return { error: "Can only complete the current day" };
+  }
 
   const dayPlan = getDayPlan(day);
   if (!dayPlan) return { error: "Day plan not found" };
@@ -121,12 +117,41 @@ export async function completeDay(day: number) {
     state.currentDay = day + 1;
   }
 
-  await writeState(state);
-  revalidatePath("/");
-  revalidatePath("/today");
-  revalidatePath("/weekly");
-  revalidatePath("/monthly");
-  revalidatePath("/history");
-
   return { success: true, score };
+}
+
+export function updateWeeklyReport(
+  state: TrackerState,
+  week: number,
+  field: "githubActivity" | "actionPlan",
+  value: string,
+): void {
+  const key = String(week);
+  const report = state.weeklyReports[key];
+  if (!report) return;
+
+  if (field === "githubActivity") {
+    report.githubActivity = value;
+  } else {
+    report.actionPlan = value.split("\n").filter(Boolean);
+  }
+}
+
+export function updateMonthlyReport(
+  state: TrackerState,
+  month: number,
+  field: "portfolioReview" | "updatedRoadmapNotes" | "improvementPlan",
+  value: string,
+): void {
+  const key = String(month);
+  const report = state.monthlyReports[key];
+  if (!report) return;
+
+  if (field === "portfolioReview") {
+    report.portfolioReview = value;
+  } else if (field === "updatedRoadmapNotes") {
+    report.updatedRoadmapNotes = value;
+  } else {
+    report.improvementPlan = value.split("\n").filter(Boolean);
+  }
 }

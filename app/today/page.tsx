@@ -1,19 +1,20 @@
+"use client";
+
 import { CompleteDayButton } from "@/components/CompleteDayButton";
 import { ReflectionForm } from "@/components/ReflectionForm";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { SectionCard } from "@/components/SectionCard";
 import { TaskChecklist } from "@/components/TaskChecklist";
+import { useTracker } from "@/components/TrackerProvider";
 import { TOTAL_DAYS } from "@/lib/constants";
 import { getDayPlan } from "@/lib/curriculum";
 import { canCompleteDay, getTotalEstimatedMinutes } from "@/lib/scoring";
-import { getDayProgressKey, readState } from "@/lib/store";
+import { getDayProgressKey } from "@/lib/store";
 import { createEmptyDayProgress } from "@/lib/types";
 import { formatMinutes } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
-export default async function TodayPage() {
-  const state = await readState();
+export default function TodayPage() {
+  const { state } = useTracker();
   const day = state.currentDay;
   const dayPlan = getDayPlan(day);
 

@@ -1,9 +1,7 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import type { DayPlan, DayProgress } from "@/lib/types";
-import { toggleTask } from "@/app/today/actions";
+import { useTracker } from "@/components/TrackerProvider";
 
 interface TaskChecklistProps {
   dayPlan: DayPlan;
@@ -12,41 +10,20 @@ interface TaskChecklistProps {
 }
 
 export function TaskChecklist({ dayPlan, progress, day }: TaskChecklistProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [optimisticProgress, setOptimisticProgress] = useOptimistic(
-    progress,
-    (state, taskId: string) => {
-      const completed = state.tasksCompleted.includes(taskId);
-      return {
-        ...state,
-        tasksCompleted: completed
-          ? state.tasksCompleted.filter((id) => id !== taskId)
-          : [...state.tasksCompleted, taskId],
-      };
-    },
-  );
-
-  function handleToggle(taskId: string) {
-    startTransition(async () => {
-      setOptimisticProgress(taskId);
-      await toggleTask(day, taskId);
-      router.refresh();
-    });
-  }
+  const { toggleTask } = useTracker();
 
   return (
     <ul className="space-y-2">
       {dayPlan.tasks.map((task) => {
-        const checked = optimisticProgress.tasksCompleted.includes(task.id);
+        const checked = progress.tasksCompleted.includes(task.id);
         return (
           <li key={task.id} className="flex items-start gap-3">
             <input
               type="checkbox"
               id={`task-${task.id}`}
               checked={checked}
-              disabled={isPending || optimisticProgress.status === "completed"}
-              onChange={() => handleToggle(task.id)}
+              disabled={progress.status === "completed"}
+              onChange={() => toggleTask(day, task.id)}
               className="mt-1 h-4 w-4 rounded border-zinc-300 accent-zinc-900 dark:border-zinc-600 dark:accent-zinc-100"
             />
             <label

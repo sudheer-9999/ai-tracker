@@ -1,9 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
-import { updateWeeklyReport } from "@/app/weekly/actions";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { SectionCard } from "@/components/SectionCard";
+import { useTracker } from "@/components/TrackerProvider";
 import type { WeeklyReport } from "@/lib/types";
 import { projectHealthColor, projectHealthLabel } from "@/lib/utils";
 
@@ -12,7 +11,7 @@ interface WeeklyReportCardProps {
 }
 
 export function WeeklyReportCard({ report }: WeeklyReportCardProps) {
-  const [isPending, startTransition] = useTransition();
+  const { updateWeeklyReport } = useTracker();
 
   return (
     <SectionCard title={`Week ${report.week} — ${report.daysRange}`}>
@@ -75,12 +74,9 @@ export function WeeklyReportCard({ report }: WeeklyReportCardProps) {
           <textarea
             rows={3}
             defaultValue={report.githubActivity}
-            disabled={isPending}
             onBlur={(e) => {
               if (e.target.value !== report.githubActivity) {
-                startTransition(() =>
-                  updateWeeklyReport(report.week, "githubActivity", e.target.value),
-                );
+                updateWeeklyReport(report.week, "githubActivity", e.target.value);
               }
             }}
             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -94,13 +90,10 @@ export function WeeklyReportCard({ report }: WeeklyReportCardProps) {
           <textarea
             rows={3}
             defaultValue={report.actionPlan.join("\n")}
-            disabled={isPending}
             onBlur={(e) => {
               const newVal = e.target.value;
               if (newVal !== report.actionPlan.join("\n")) {
-                startTransition(() =>
-                  updateWeeklyReport(report.week, "actionPlan", newVal),
-                );
+                updateWeeklyReport(report.week, "actionPlan", newVal);
               }
             }}
             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"

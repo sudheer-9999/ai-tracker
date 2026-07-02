@@ -1,9 +1,11 @@
+"use client";
+
 import { MonthlyReportCard } from "@/components/MonthlyReportCard";
-import { readState } from "@/lib/store";
+import { useTracker } from "@/components/TrackerProvider";
 import type { MonthlyReport } from "@/lib/types";
 
-export default async function MonthlyPage() {
-  const state = await readState();
+export default function MonthlyPage() {
+  const { state } = useTracker();
   const reports = Object.values(state.monthlyReports).sort(
     (a, b) => b.month - a.month,
   ) as MonthlyReport[];
@@ -19,8 +21,8 @@ export default async function MonthlyPage() {
 
       {reports.length === 0 ? (
         <p className="text-center text-zinc-500 py-12">
-          No monthly reports yet. Complete the last day of each month (days 28, 56, 84, 112, 140) to generate your first report.
-          your first report.
+          No monthly reports yet. Complete the last day of each month (days 28,
+          56, 84, 112, 140) to generate your first report.
         </p>
       ) : (
         <div className="space-y-6">

@@ -1,10 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
-import { updateMonthlyReport } from "@/app/monthly/actions";
 import { ProgressBar } from "@/components/ProgressBar";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import { SectionCard } from "@/components/SectionCard";
+import { useTracker } from "@/components/TrackerProvider";
 import { SKILL_CATEGORIES, SKILL_LABELS, type MonthlyReport } from "@/lib/types";
 
 interface MonthlyReportCardProps {
@@ -12,7 +11,7 @@ interface MonthlyReportCardProps {
 }
 
 export function MonthlyReportCard({ report }: MonthlyReportCardProps) {
-  const [isPending, startTransition] = useTransition();
+  const { updateMonthlyReport } = useTracker();
 
   return (
     <SectionCard title={`Month ${report.month} — ${report.daysRange}`}>
@@ -77,12 +76,9 @@ export function MonthlyReportCard({ report }: MonthlyReportCardProps) {
           <textarea
             rows={3}
             defaultValue={report.portfolioReview}
-            disabled={isPending}
             onBlur={(e) => {
               if (e.target.value !== report.portfolioReview) {
-                startTransition(() =>
-                  updateMonthlyReport(report.month, "portfolioReview", e.target.value),
-                );
+                updateMonthlyReport(report.month, "portfolioReview", e.target.value);
               }
             }}
             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -96,12 +92,9 @@ export function MonthlyReportCard({ report }: MonthlyReportCardProps) {
           <textarea
             rows={3}
             defaultValue={report.improvementPlan.join("\n")}
-            disabled={isPending}
             onBlur={(e) => {
               if (e.target.value !== report.improvementPlan.join("\n")) {
-                startTransition(() =>
-                  updateMonthlyReport(report.month, "improvementPlan", e.target.value),
-                );
+                updateMonthlyReport(report.month, "improvementPlan", e.target.value);
               }
             }}
             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -115,12 +108,9 @@ export function MonthlyReportCard({ report }: MonthlyReportCardProps) {
           <textarea
             rows={3}
             defaultValue={report.updatedRoadmapNotes}
-            disabled={isPending}
             onBlur={(e) => {
               if (e.target.value !== report.updatedRoadmapNotes) {
-                startTransition(() =>
-                  updateMonthlyReport(report.month, "updatedRoadmapNotes", e.target.value),
-                );
+                updateMonthlyReport(report.month, "updatedRoadmapNotes", e.target.value);
               }
             }}
             className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"

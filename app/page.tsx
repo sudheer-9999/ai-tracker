@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { ProgressBar } from "@/components/ProgressBar";
 import { SectionCard } from "@/components/SectionCard";
 import { SkillBar } from "@/components/SkillBar";
 import { StatCard } from "@/components/StatCard";
 import { StreakFlame } from "@/components/StreakFlame";
+import { useTracker } from "@/components/TrackerProvider";
 import { getDayPlan, getMonthForDay, getWeekForDay } from "@/lib/curriculum";
 import { TOTAL_DAYS, TOTAL_MONTHS, TOTAL_WEEKS } from "@/lib/constants";
 import {
@@ -12,12 +15,12 @@ import {
   getMilestones,
   getOverallProgress,
 } from "@/lib/scoring";
-import { getDayProgressKey, readState } from "@/lib/store";
+import { getDayProgressKey } from "@/lib/store";
 import { SKILL_CATEGORIES, createEmptyDayProgress } from "@/lib/types";
 import { formatDate, formatMinutes } from "@/lib/utils";
 
-export default async function DashboardPage() {
-  const state = await readState();
+export default function DashboardPage() {
+  const { state } = useTracker();
   const day = state.currentDay;
   const dayPlan = getDayPlan(day);
   const progress =

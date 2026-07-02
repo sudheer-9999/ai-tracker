@@ -1,22 +1,26 @@
+"use client";
+
 import { CurriculumOutline } from "@/components/CurriculumOutline";
 import { StatCard } from "@/components/StatCard";
+import { useTracker } from "@/components/TrackerProvider";
 import { TOTAL_DAYS, TOTAL_MONTHS, TOTAL_WEEKS } from "@/lib/constants";
 import { getMonthForDay, getWeekForDay } from "@/lib/curriculum";
-import { readState } from "@/lib/store";
 import { MONTHS } from "@/lib/topics-data";
 
-export default async function CurriculumPage() {
-  const state = await readState();
+export default function CurriculumPage() {
+  const { state } = useTracker();
   const currentDay = state.currentDay;
-  const currentMonth = MONTHS.find((m) => m.month === getMonthForDay(currentDay));
+  const currentMonth = MONTHS.find(
+    (m) => m.month === getMonthForDay(currentDay),
+  );
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Curriculum</h1>
         <p className="mt-1 text-zinc-500 dark:text-zinc-400">
-          Full 140-day AI Engineer learning path — all months, weeks, and
-          daily topics
+          Full 140-day AI Engineer learning path — all months, weeks, and daily
+          topics
         </p>
       </div>
 
@@ -26,11 +30,7 @@ export default async function CurriculumPage() {
         <StatCard label="Total Months" value={TOTAL_MONTHS} />
         <StatCard
           label="You Are Here"
-          value={
-            currentDay > TOTAL_DAYS
-              ? "Complete"
-              : `Day ${currentDay}`
-          }
+          value={currentDay > TOTAL_DAYS ? "Complete" : `Day ${currentDay}`}
           sub={
             currentDay <= TOTAL_DAYS
               ? `Month ${getMonthForDay(currentDay)} · Week ${getWeekForDay(currentDay)} · ${currentMonth?.title ?? ""}`

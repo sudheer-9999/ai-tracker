@@ -1,8 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
 import type { Reflection } from "@/lib/types";
-import { saveReflection, saveTimeSpent } from "@/app/today/actions";
+import { useTracker } from "@/components/TrackerProvider";
 
 interface ReflectionFormProps {
   day: number;
@@ -25,21 +24,17 @@ export function ReflectionForm({
   timeSpentMinutes,
   disabled,
 }: ReflectionFormProps) {
-  const [isPending, startTransition] = useTransition();
+  const { saveReflection, saveTimeSpent } = useTracker();
 
   function handleReflectionBlur(field: keyof Reflection, value: string) {
     if (value === reflection[field]) return;
-    startTransition(() => {
-      saveReflection(day, field, value);
-    });
+    saveReflection(day, field, value);
   }
 
   function handleTimeBlur(value: string) {
     const minutes = parseInt(value, 10) || 0;
     if (minutes === timeSpentMinutes) return;
-    startTransition(() => {
-      saveTimeSpent(day, minutes);
-    });
+    saveTimeSpent(day, minutes);
   }
 
   return (
@@ -56,7 +51,7 @@ export function ReflectionForm({
           type="number"
           min={0}
           defaultValue={timeSpentMinutes || ""}
-          disabled={disabled || isPending}
+          disabled={disabled}
           onBlur={(e) => handleTimeBlur(e.target.value)}
           className="w-full max-w-xs rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           placeholder="e.g. 120"
@@ -75,7 +70,7 @@ export function ReflectionForm({
             id={`reflection-${key}`}
             rows={2}
             defaultValue={reflection[key]}
-            disabled={disabled || isPending}
+            disabled={disabled}
             onBlur={(e) => handleReflectionBlur(key, e.target.value)}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           />

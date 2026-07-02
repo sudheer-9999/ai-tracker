@@ -1,11 +1,13 @@
+"use client";
+
 import { ScoreBadge } from "@/components/ScoreBadge";
+import { useTracker } from "@/components/TrackerProvider";
 import { getDayPlan } from "@/lib/curriculum";
-import { readState } from "@/lib/store";
 import type { DayProgress } from "@/lib/types";
 import { formatDate, formatMinutes } from "@/lib/utils";
 
-export default async function HistoryPage() {
-  const state = await readState();
+export default function HistoryPage() {
+  const { state } = useTracker();
 
   const entries = Object.entries(state.dayProgress)
     .filter(([, p]) => (p as DayProgress).status === "completed")

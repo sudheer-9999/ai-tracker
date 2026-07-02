@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nav } from "@/components/Nav";
+import { TrackerGate, TrackerProvider } from "@/components/TrackerProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,9 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col bg-zinc-50 font-sans text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
         <Nav />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-          {children}
+          <TrackerProvider>
+            <TrackerGate>{children}</TrackerGate>
+          </TrackerProvider>
         </main>
       </body>
     </html>
