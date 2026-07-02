@@ -10,6 +10,8 @@ import { getDayProgressKey, readState } from "@/lib/store";
 import { createEmptyDayProgress } from "@/lib/types";
 import { formatMinutes } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function TodayPage() {
   const state = await readState();
   const day = state.currentDay;
